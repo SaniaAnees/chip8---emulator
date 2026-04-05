@@ -1,0 +1,124 @@
+#include<stdio.h>
+#include<stdint.h>
+#include<string.h>
+#include<stdlib.h>
+#include<unistd.h>
+//CHIP-8 STRUCT
+typedef struct {
+uint8_t memory[4096];   
+uint8_t V[16];         //here each register is only of one byte  
+uint16_t PC;
+uint16_t I;
+uint16_t stack[16];  //here stack is used to call subroutines , it can be nested so to limit it we keep size of stack as 16 so it can hold only addresses of 16 subroutines
+uint8_t sound;
+uint8_t delay;
+uint8_t SP;
+uint8_t display[64*32]; //here we can also represent it as a matrix like unit8_t[64][32] but it would increase the loops in DXYN
+uint8_t KP[16];    //Keypad 0-F      //pixel is either 1 or 0 ie is in bits but c cant express in bits so we allocate 1 byte for a pixel- waste of storage but simple
+}chip8;   //here chip8 is structure data type
+//font
+uint8_t font[]={
+    0xF0,0x90,0x90,0x90,0xF0, // 0
+    0x20,0x60,0x20,0x20,0x70, // 1
+    0xF0,0x10,0xF0,0x80,0xF0, // 2
+    0xF0,0x10,0xF0,0x10,0xF0, // 3
+    0x90,0x90,0xF0,0x10,0x10, // 4
+    0xF0,0x80,0xF0,0x10,0xF0, // 5
+    0xF0,0x80,0xF0,0x90,0xF0, // 6
+    0xF0,0x10,0x20,0x40,0x40, // 7
+    0xF0,0x90,0xF0,0x90,0xF0, // 8
+    0xF0,0x90,0xF0,0x10,0xF0, // 9
+    0xF0,0x90,0xF0,0x90,0x90, // A
+    0xE0,0x90,0xE0,0x90,0xE0, // B
+    0xF0,0x80,0x80,0x80,0xF0, // C
+    0xE0,0x90,0x90,0x90,0xE0, // D
+    0xF0,0x80,0xF0,0x80,0xF0, // E
+    0xF0,0x80,0xF0,0x80,0x80  // F
+};
+//init function
+void init(chip8*c8){
+    memset(c8,0,sizeof(chip8)); //memset fills a block of memory with a value you provided in second argument  
+    c8->PC=0x200;
+    for(int i=0;i<80;i++){
+        c8->memory[0x050+i]=font[i];
+    }
+}
+//load rom
+void load_rom(chip8*c8,const char*filename)  //cont char* means the string wont be modified
+{   FILE*file;
+    file=fopen(filename,"rb");
+    fread(c8->memory+0x200,1,3584,file); //c8->memory[0x200] , 4096-512(font data + reserved unused space)=3584
+    fclose(file);
+}
+// MAIN FUNCTION
+int main(){
+chip8 c8; //struct variable 
+init(&c8);
+load_rom(&c8,"IBM Logo.ch8");
+int X,Y;
+int add,N;
+int xpos,ypos;
+while(1){
+    uint16_t opcode=(c8.memory[c8.PC])<<8|c8.memory[c8.PC+1];
+    c8.PC+=2;
+    switch(opcode & 0xF000){
+        case 0x0000:
+        if (opcode==0x00E0){
+            memset(c8.display,0,sizeof(c8.display));
+        };
+        break;
+        case 0x1000:          // Jump to address NNN
+        c8.PC= opcode & 0x0FFF;        
+        break;
+        case 0x6000:         // here set register V[X] to address NN
+        X= (opcode & 0x0F00)>>8;
+        c8.V[X]=opcode & 0x00FF;
+        break;
+        case 0x7000:        // here NN is added to V[X]
+        add = opcode & 0x00FF;
+        X=(opcode & 0x0F00)>>8;
+        c8.V[X]+=add;
+        break;
+        case 0xA000:          // Set Register A to addresses NNN
+        c8.I=opcode & 0x0FFF;
+        break;
+        case 0xD000:
+        X=(opcode & 0x0F00)>>8;
+        Y=(opcode & 0x00F0)>>4;
+        N=(opcode & 0x000F);
+        xpos=c8.V[X]%64;   
+        ypos=c8.V[Y]%32;
+        c8.V[0xF]=0;  // sets V[F]=0
+        for(int i=0;i<N;i++){
+            uint8_t sprite_byte = c8.memory[c8.I+i];  //I points to where the sprite data starts in memory. Each row of the sprite is one byte.(c8.I + i) just walks through each row of the sprite data
+            for(int j=0;j<8;j++){
+                if((sprite_byte & (0x80>>j))!=0){
+                    xpos=(c8.V[X]+j)%64;
+                    ypos=(c8.V[Y]+i)%32;
+                    int index=(ypos*64)+xpos;
+                    if(c8.display[index] == 1) {
+                    c8.V[0xF] = 1;
+                }
+                c8.display[index]^=1;
+                }
+            }
+        }
+        break;
+        default:printf("unkown opcode : 0x%X\n",opcode);
+        break;
+    }
+    printf("\033[H\033[J"); //clear screen command-ANSI escape code
+    for(int i=0;i<32;i++){
+        for(int j=0;j<64;j++){
+           if(c8.display[(i*64)+j]==1){
+            printf("#");
+           }
+           else{
+            printf(" ");
+           }
+        }
+        printf("\n");
+    }
+    usleep(1200);
+}
+}
