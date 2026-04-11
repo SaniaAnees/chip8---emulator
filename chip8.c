@@ -58,14 +58,94 @@ load_rom(&c8,"IBM Logo.ch8");
 int X,Y;
 int add,N;
 int xpos,ypos;
+uint16_t Add;
+uint8_t bit;
 while(1){
     uint16_t opcode=(c8.memory[c8.PC])<<8|c8.memory[c8.PC+1];
     c8.PC+=2;
     switch(opcode & 0xF000){
         case 0x0000:
-        if (opcode==0x00E0){
+        if(opcode==0x00EE){ //return from sub routine
+            c8.SP--;
+            c8.PC=c8.stack[c8.SP];
+        }
+        if (opcode==0x00E0){  //clear screen
             memset(c8.display,0,sizeof(c8.display));
         };
+        break;
+        case 0x2000: // call sub routine
+        c8.stack[c8.SP]=c8.PC;  // save current PC onto the stack
+        c8.SP++;                //move stack pointer up
+        c8.PC= opcode & 0x0FFF; //Start executing the subroutine
+        break;
+        case 0x3000:          //skip if V[X]==NN
+        X=(opcode & 0x0F00)>>8;
+        add=opcode & 0x00FF;
+        if(c8.V[X]==add){
+            c8.PC+=2;
+        }
+        break;               
+        case 0x4000:         //skip if V[X]!=NN
+        X=(opcode & 0x0F00)>>8;
+        add=opcode & 0x00FF;
+        if(c8.V[X] != add){
+            c8.PC+=2;
+        }
+        break;   
+        case 0x5000:         //skip if V[X]==V[Y]
+        X=(opcode & 0x0F00)>>8;
+        Y=(opcode & 0x00F0)>>4;
+        if(c8.V[X]==c8.V[Y]){
+            c8.PC+=2;
+        }
+        break;
+        case 0x9000:    //SKIP IF V[X]!=V[Y]
+        X=(opcode & 0x0F00)>>8;
+        Y=(opcode & 0x00F0)>>4;
+        if(c8.V[X]!=c8.V[Y]){
+            c8.PC+=2;
+        }
+        break;
+        case 0x8000:
+        X=(opcode & 0x0F00)>>8;
+        Y=(opcode & 0x00F0)>>4;
+        switch(opcode & 0x000F){
+            case 0x0:    //set V[X]=V[Y]
+            c8.V[X]=c8.V[Y];
+            break;
+            case 0x1:   //set V[X] to Bitwise or of V[X] | V[Y]
+            c8.V[X]=(c8.V[X]|c8.V[Y]);
+            break;
+            case 0x2:   //set V[X] to Bitwise and of V[X] & V[Y]
+            c8.V[X]=(c8.V[X] & c8.V[Y]);
+            break;
+            case 0x3:   //set V[X] to Bitwise xor of V[X] ^ V[Y]
+            c8.V[X]=(c8.V[X]^c8.V[Y]);
+            break;
+            case 0x4:   //set V[X]=V[X]+V[Y]
+            if((c8.V[X]+c8.V[Y])>255){
+                c8.V[F]=1;
+            }
+            else{
+                c8.V[F]=0;
+            }
+            Add=c8.V[X]+c8.V[Y];
+            c8.V[X]=Add;
+            break;
+            case 0x5:   //set V[X]=V[X]-V[Y]
+            if(c8.V[X]<c8.V[Y]){
+                c8.V[F]=0;
+            }
+            if(c8.V[X]>=c8.V[Y]){
+                c8.V[F]=1;
+            }
+            c8.V[X]=c8.V[X]-c8.V[Y];
+            break;
+            case 0x6:
+            bit=(c8.V[X]>>1);
+            c8.V[X]=c8.V[X]>>1;
+            break;
+        }
         break;
         case 0x1000:          // Jump to address NNN
         c8.PC= opcode & 0x0FFF;        
