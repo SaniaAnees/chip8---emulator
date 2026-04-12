@@ -59,7 +59,7 @@ int X,Y;
 int add,N;
 int xpos,ypos;
 uint16_t Add;
-uint8_t bit;
+int i=0;
 while(1){
     uint16_t opcode=(c8.memory[c8.PC])<<8|c8.memory[c8.PC+1];
     c8.PC+=2;
@@ -124,27 +124,118 @@ while(1){
             break;
             case 0x4:   //set V[X]=V[X]+V[Y]
             if((c8.V[X]+c8.V[Y])>255){
-                c8.V[F]=1;
+                c8.V[0xF]=1;
             }
             else{
-                c8.V[F]=0;
+                c8.V[0xF]=0;
             }
-            Add=c8.V[X]+c8.V[Y];
+            Add=c8.V[X]+c8.V[Y];   //If add is >255 only the leftmost 8 bits will be kept and the remaining will be truncated because of uint8_t
             c8.V[X]=Add;
             break;
             case 0x5:   //set V[X]=V[X]-V[Y]
             if(c8.V[X]<c8.V[Y]){
-                c8.V[F]=0;
+                c8.V[0xF]=0;       // subtraction failed ->VF=0,uint8_t can only hold 0 to 255. When a result goes negative, C wraps it by adding 256.so if v[x]=-192 then uint8_t will hold -192+256=64(wraparound)
             }
             if(c8.V[X]>=c8.V[Y]){
-                c8.V[F]=1;
+                c8.V[0xF]=1;
             }
             c8.V[X]=c8.V[X]-c8.V[Y];
             break;
-            case 0x6:
-            bit=(c8.V[X]>>1);
+            case 0x6:       // V[X]=V[X]>>1
+            c8.V[0xF]=c8.V[X] & 0x01;
             c8.V[X]=c8.V[X]>>1;
             break;
+            case 0x7:      //V[X]=V[Y]-V[X]
+            if(c8.V[X]>c8.V[Y]){
+                c8.V[0xF]=0;
+            }
+            if(c8.V[X]<=c8.V[Y]){
+                c8.V[0xF]=1;          //subtraction sucessfull
+            }
+            c8.V[X]=c8.V[Y]-c8.V[X];
+            break;
+           case 0xE:     //c8.V[X]=c8.V[X]<<1
+            if((c8.V[X] & 0x80)!=0){
+            c8.V[0xF]=1;
+            }
+            else{
+                c8.V[0xF]=0;
+            }
+            c8.V[X]=c8.V[X]<<1;
+            break;
+        }
+        break;
+        case 0xB000:         //jump PC to address NNN + whatever value is in register V[0]
+        add=opcode & 0x0FFF;
+        c8.PC=add+c8.V[0];
+        break;
+        case 0xC000:         //put any random number in v[x] but wrapped by NN to limit it in 0-255
+        add=opcode & 0x00FF;
+        X=(opcode & 0x0F00)>>8;
+        c8.V[X]=rand() & add;
+        break;
+        case 0xE000:    // skip if key is pressed or not 
+        X=(opcode & 0x0F00)>>8;
+        switch(opcode & 0x00FF){
+        case 0x009E:    //skip if v[x] is already pressed
+        if(c8.KP[c8.V[X]]==1){
+            c8.PC+=2;
+        }
+        break;
+        case 0x00A1:    //skip if V[X] is not pressed
+        if(c8.KP[c8.V[X]]==0){
+            c8.PC+=2;
+        }
+        break;
+        }
+        break;
+        case 0xF000:
+        X=(opcode & 0x0F00)>>8;
+        switch(opcode & 0x00FF){
+        case 0x07:     //set v[x]=delay
+        c8.V[X]=c8.delay;
+        break;
+        case 0x15:     //set delay=v[x]
+        c8.delay=c8.V[X];
+        break;
+        case 0x18:   //set sound=v[x]
+        c8.sound=c8.V[X];
+        break;
+        case 0x1E:    //set I=I+V[X]
+        c8.I+=c8.V[X];
+        break;
+        case 0x29:
+        c8.I=0x050+(c8.V[X]*5);   //I= starts at 0x050+ N(HERE WHATEVER IS STORED IN V[X])*5(EACH FONT IS 5 BYTES TALL)--I is a pointer to address
+        break;
+        case 0x33:
+        add=c8.V[X];
+        c8.memory[c8.I]=add/100;
+        c8.memory[c8.I+1]=(add/10)%10;
+        c8.memory[c8.I+2]=add%10;
+        break;
+        case 0x55:
+        for(i=0;i<=X;i++){
+            c8.memory[c8.I+i]=c8.V[i];
+        }
+        break;
+        case 0x65:
+        for(i=0;i<=X;i++){
+           c8.V[i]=c8.memory[c8.I+i];
+        }
+        break;
+        case 0x0A:{
+        int found=0;
+        for(i=0;i<16;i++){
+            if(c8.KP[i]==1){
+                c8.V[X]=i;
+                found=1;
+            }
+        }
+        if(found==0){
+            c8.PC-=2;
+        }
+        break;
+        }
         }
         break;
         case 0x1000:          // Jump to address NNN
@@ -168,7 +259,7 @@ while(1){
         N=(opcode & 0x000F);
         xpos=c8.V[X]%64;   
         ypos=c8.V[Y]%32;
-        c8.V[0xF]=0;  // sets V[F]=0
+        c8.V[0xF]=0;  // sets V[0xF]=0
         for(int i=0;i<N;i++){
             uint8_t sprite_byte = c8.memory[c8.I+i];  //I points to where the sprite data starts in memory. Each row of the sprite is one byte.(c8.I + i) just walks through each row of the sprite data
             for(int j=0;j<8;j++){
@@ -177,7 +268,7 @@ while(1){
                     ypos=(c8.V[Y]+i)%32;
                     int index=(ypos*64)+xpos;
                     if(c8.display[index] == 1) {
-                    c8.V[0xF] = 1;
+                    c8.V[0xF] = 1;           //collision detected  ->VF=1
                 }
                 c8.display[index]^=1;
                 }

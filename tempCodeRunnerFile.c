@@ -3,7 +3,7 @@
 #include<string.h>
 
 //CHIP-8 STRUCT
-typedef struct {
+typedef struct { 
 uint8_t memory[4096];   
 uint8_t V[16];         //here each register is only of one byte 
 uint16_t PC;
