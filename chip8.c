@@ -2,7 +2,7 @@
 #include<stdint.h>
 #include<string.h>
 #include<stdlib.h>
-#include<unistd.h>
+#include<SDL2/SDL.h>
 //CHIP-8 STRUCT
 typedef struct {
 uint8_t memory[4096];   
@@ -51,7 +51,7 @@ void load_rom(chip8*c8,const char*filename)  //cont char* means the string wont 
     fclose(file);
 }
 // MAIN FUNCTION
-int main(){
+int main(int argc,char*argv[]){
 chip8 c8; //struct variable 
 init(&c8);
 load_rom(&c8,"IBM Logo.ch8");
@@ -60,6 +60,10 @@ int add,N;
 int xpos,ypos;
 uint16_t Add;
 int i=0;
+SDL_Init(SDL_INIT_VIDEO);                     //starts the SDL system
+SDL_Window* window=SDL_CreateWindow("THE SCREEN",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,640,320,0);  //This function creates and opens new window on your screen with title "THE SCREEN",centered,640*320 pixels.
+SDL_Renderer* renderer=SDL_CreateRenderer(window,-1,0);  //Takes your window and creates a drawing surface inside it.
+// -1 above means let SDL automatically pick up the best rendering driver available on your system
 while(1){
     uint16_t opcode=(c8.memory[c8.PC])<<8|c8.memory[c8.PC+1];
     c8.PC+=2;
@@ -278,18 +282,6 @@ while(1){
         default:printf("unkown opcode : 0x%X\n",opcode);
         break;
     }
-    printf("\033[H\033[J"); //clear screen command-ANSI escape code
-    for(int i=0;i<32;i++){
-        for(int j=0;j<64;j++){
-           if(c8.display[(i*64)+j]==1){
-            printf("#");
-           }
-           else{
-            printf(" ");
-           }
-        }
-        printf("\n");
-    }
-    usleep(1200);
+   SDL_Delay(2);
 }
 }
