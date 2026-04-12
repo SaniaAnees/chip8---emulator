@@ -1,0 +1,5 @@
+include/
+lib/
+SDL2.dll
+*.exe
+tempCodeRunnerFile.c
