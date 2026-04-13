@@ -62,10 +62,19 @@ uint16_t Add;
 int i=0;
 SDL_Init(SDL_INIT_VIDEO);                     //starts the SDL system
 SDL_Window* window=SDL_CreateWindow("THE SCREEN",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,640,320,0);  //This function creates and opens new window on your screen with title "THE SCREEN",centered,640*320 pixels.
-SDL_Renderer* renderer=SDL_CreateRenderer(window,-1,0);  //Takes your window and creates a drawing surface inside it.
+SDL_Renderer* renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_SOFTWARE);  //Takes your window and creates a drawing surface inside it.
 // -1 above means let SDL automatically pick up the best rendering driver available on your system
+//SDL_SetRenderDrawColor(renderer,200,150,255,255);
+//SDL_RenderClear(renderer);
+//SDL_RenderPresent(renderer);
 while(1){
-    uint16_t opcode=(c8.memory[c8.PC])<<8|c8.memory[c8.PC+1];
+    SDL_Event event;         //// declare a variable to hold whatever event happened
+    while(SDL_PollEvent(&event)){            // keep checking for events; fills 'event' with what happened
+    if(event.type == SDL_QUIT){              // if the event was "user clicked X"--close button
+        exit(0);                              //// close the program
+    }
+    }
+    uint16_t opcode=(c8.memory[c8.PC])<<8|c8.memory[c8.PC+1];  //opcode is 16 bits long
     c8.PC+=2;
     switch(opcode & 0xF000){
         case 0x0000:
@@ -282,6 +291,23 @@ while(1){
         default:printf("unkown opcode : 0x%X\n",opcode);
         break;
     }
-   SDL_Delay(2);
+   SDL_Delay(2); //pauses instruction for 2 milliseconds-stable to achieve 500fps
+   SDL_SetRenderDrawColor(renderer,20,20,60,255);      //sets color toc navy(20,20,60) for the renderer
+   SDL_RenderClear(renderer);   //this fills the renderer with navy
+   for(int i=0;i<32;i++){
+    for(int j=0;j<64;j++){
+        if(c8.display[(i*64)+j]==1){
+            SDL_SetRenderDrawColor(renderer,200,150,255,255);   //tells renderer -the next thing you draw -use this colour -renderer (the drawing surface),200-150-255 (rgb colour for light purple),255-alpha(opacity)fully visible [Alpha — transparency. 255 = fully visible, 0 = invisible.]
+            SDL_Rect rect;
+            rect.x=j*10;
+            rect.y=i*10;
+            rect.w=10;
+            rect.h=10;
+            SDL_RenderFillRect(renderer,&rect);
+        }
+    }
+   }
+   SDL_RenderPresent(renderer);
+   printf("rendering\n");
 }
 }
