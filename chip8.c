@@ -398,7 +398,7 @@ while(1){
    if(c8.sound>0){
     c8.sound--;
    }
-   SDL_Delay(2); //pauses instruction for 2 milliseconds-stable to achieve 500fps
+   SDL_Delay(16); //pauses instruction for 16 milliseconds-stable to achieve 500fps
    SDL_SetRenderDrawColor(renderer,20,20,60,255);      //sets color toc navy(20,20,60) for the renderer
    SDL_RenderClear(renderer);   //this fills the renderer with navy
    for(int i=0;i<32;i++){
