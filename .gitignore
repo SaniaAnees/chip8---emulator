@@ -3,3 +3,4 @@ lib/
 SDL2.dll
 *.exe
 tempCodeRunnerFile.c
+*.ch8
