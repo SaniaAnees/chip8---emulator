@@ -392,6 +392,12 @@ while(1){
         default:printf("unkown opcode : 0x%X\n",opcode);
         break;
     }
+   if(c8.delay>0){
+    c8.delay--;
+   }
+   if(c8.sound>0){
+    c8.sound--;
+   }
    SDL_Delay(2); //pauses instruction for 2 milliseconds-stable to achieve 500fps
    SDL_SetRenderDrawColor(renderer,20,20,60,255);      //sets color toc navy(20,20,60) for the renderer
    SDL_RenderClear(renderer);   //this fills the renderer with navy
