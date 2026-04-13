@@ -72,7 +72,7 @@ It is capable of running classic CHIP-8 ROMs such as Pong,demonstrating correct 
 ![IBM Demo](assets/IBMLogo.png)
 
 ### Pong Running
-![Pong Demo](assets/Pong.png)
+![Pong Demo](assets/PONG.png)
 
 ## ⚙️ Build & Run
 
