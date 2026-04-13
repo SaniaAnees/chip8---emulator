@@ -54,7 +54,7 @@ void load_rom(chip8*c8,const char*filename)  //cont char* means the string wont 
 int main(int argc,char*argv[]){
 chip8 c8; //struct variable 
 init(&c8);
-load_rom(&c8,"IBM Logo.ch8");
+load_rom(&c8,"Pong [Paul Vervalin, 1990].ch8");
 int X,Y;
 int add,N;
 int xpos,ypos;
