@@ -44,17 +44,21 @@ void init(chip8*c8){
     }
 }
 //load rom
-void load_rom(chip8*c8,const char*filename)  //cont char* means the string wont be modified
-{   FILE*file;
+void load_rom(chip8*c8,const char*filename){
+    FILE*file;
     file=fopen(filename,"rb");
-    fread(c8->memory+0x200,1,3584,file); //c8->memory[0x200] , 4096-512(font data + reserved unused space)=3584
+    if (file==NULL){
+        printf("could not open %s file",filename);
+        return;
+    }
+    fread(c8->memory+0x200,1,3584,file);
     fclose(file);
 }
 // MAIN FUNCTION
 int main(int argc,char*argv[]){
 chip8 c8; //struct variable 
 init(&c8);
-load_rom(&c8,"Pong [Paul Vervalin, 1990].ch8");
+load_rom(&c8,"ROMS/Pong.ch8");
 int X,Y;
 int add,N;
 int xpos,ypos;

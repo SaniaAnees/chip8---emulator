@@ -186,7 +186,6 @@ This project helped me transition from writing programs to **understanding how a
 ## 📌 Author
 
 **Sania Anees**
-Computer Science Student
 
 ---
 
